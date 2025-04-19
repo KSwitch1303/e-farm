@@ -98,7 +98,6 @@ async function uploadImage(img) {
         // const imgDirectory = './uploads';
         const imgURL = img;
         // const filePath = `${imgDirectory}/${imgName}`;
-        // const fileBuffer = fs.readFileSync(filePath);
         const image = createGenericFile(
             imgURL,
             nftDetail.name,
