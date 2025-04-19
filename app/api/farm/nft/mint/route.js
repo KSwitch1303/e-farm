@@ -1,18 +1,20 @@
-import { connectDB } from "@utils/connectDB";
 
 
 import { createNft, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { createGenericFile, createSignerFromKeypair, generateSigner, keypairIdentity, percentAmount, sol } from '@metaplex-foundation/umi';
 import { irysUploader } from '@metaplex-foundation/umi-uploader-irys';
-import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters'
-
+const secret = process.env.NEXT_PUBLIC_WALLET;
+const JSON_SECRET = JSON.parse(secret);
+console.log("secret", JSON_SECRET);
 
 const QUICKNODE_RPC = 'https://small-alpha-emerald.solana-devnet.quiknode.pro/91006ef33d501485b71c0703fd858dfa58c591d3/';
 const umi = createUmi(QUICKNODE_RPC);
 
 const dateNow = new Date();
-
+const creatorWallet = umi.eddsa.createKeypairFromSecretKey(new Uint8Array(JSON_SECRET));
+const creator = createSignerFromKeypair(umi, creatorWallet);
+umi.use(keypairIdentity(creator));
 umi.use(mplTokenMetadata());
 
 umi.use(
@@ -41,77 +43,6 @@ const nftDetail = {
 };
 
 
-// async function uploadImage(img) {
-//     try {
-//         console.log("img", img);
-//         const imageUrl = img; 
-//         const imgName = 'plantain.jpeg'; // Name for the file, can be customized
-
-//         // Fetch the image with headers to mimic a browser request
-//         const response = await fetch(imageUrl, {
-//             method: 'GET',
-//             headers: {
-//                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-//                 'Accept': 'image/jpeg'
-//             }
-//         });
-
-//         // Check if the response is successful
-//         if (!response.ok) {
-//             throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
-//         }
-
-//         // Verify the content type
-//         const contentType = response.headers.get('content-type');
-//         if (!contentType || !contentType.includes('image')) {
-//             throw new Error(`Invalid content type: ${contentType}, expected an image`);
-//         }
-
-//         // Convert the response to a buffer
-//         const arrayBuffer = await response.arrayBuffer();
-//         const fileBuffer = Buffer.from(arrayBuffer);
-
-//         // Create a generic file for upload
-//         const image = createGenericFile(
-//             fileBuffer,
-//             imgName,
-//             {
-//                 uniqueName: nftDetail.name,
-//                 contentType: nftDetail.imgType
-//             }
-//         );
-
-//         // Upload the image to Irys
-//         const [imgUri] = await umi.uploader.upload([image]);
-//         console.log('Uploaded image:', imgUri);
-//         return imgUri;
-//     } catch (e) {
-//         console.error('Error in uploadImage:', e.message);
-//         throw e;
-//     }
-// }
-
-async function uploadImage(img) {
-    try {
-        // const imgDirectory = './uploads';
-        const imgURL = img;
-        // const filePath = `${imgDirectory}/${imgName}`;
-        const image = createGenericFile(
-            imgURL,
-            nftDetail.name,
-            {
-                uniqueName: nftDetail.name,
-                contentType: nftDetail.imgType
-            }
-        );
-        const [imgUri] = await umi.uploader.upload([image]);
-        console.log('Uploaded image:', imgUri);
-        return imgUri;
-    } catch (e) {
-        throw e;
-    }
-}
-
 async function uploadMetadata(imageUri) {
     try {
         const metadata = {
@@ -136,27 +67,9 @@ async function uploadMetadata(imageUri) {
     }
 }
 
-async function mintNft(metadataUri, publicKey) {
-    try {
-        const mint = generateSigner(umi);
-        await createNft(umi, {
-            mint,
-            name: nftDetail.name,
-            symbol: nftDetail.symbol,
-            uri: metadataUri,
-            sellerFeeBasisPoints: percentAmount(nftDetail.royalties),
-            creators: [{ address: publicKey, verified: true, share: 100 }],
-        }).sendAndConfirm(umi);
-        console.log(`Created NFT: ${mint.publicKey.toString()}`);
-    } catch (e) {
-        throw e;
-    }
-}
 
-async function main(publicKey, img) {
-    // const imageUri = await uploadImage(img);
+async function main(img) {
     const metadataUri = await uploadMetadata(img);
-    // await mintNft(metadataUri, publicKey);
     return metadataUri;
 }
 
@@ -182,7 +95,7 @@ export const POST = async (req) => {
 
     const img = metadata.image;
 
-    const metaDataUri = await main(publicKey, img);
+    const metaDataUri = await main(img);
 
     console.log("Metadata URI:", metaDataUri);
 
