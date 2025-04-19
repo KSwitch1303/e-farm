@@ -6,15 +6,13 @@ import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { createGenericFile, createSignerFromKeypair, generateSigner, keypairIdentity, percentAmount, sol } from '@metaplex-foundation/umi';
 import { irysUploader } from '@metaplex-foundation/umi-uploader-irys';
 import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters'
-import secret from './wallet.json';
+
 
 const QUICKNODE_RPC = 'https://small-alpha-emerald.solana-devnet.quiknode.pro/91006ef33d501485b71c0703fd858dfa58c591d3/';
 const umi = createUmi(QUICKNODE_RPC);
 
 const dateNow = new Date();
-const creatorWallet = umi.eddsa.createKeypairFromSecretKey(new Uint8Array(secret));
-const creator = createSignerFromKeypair(umi, creatorWallet);
-umi.use(keypairIdentity(creator));
+
 umi.use(mplTokenMetadata());
 
 umi.use(
