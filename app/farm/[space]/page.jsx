@@ -9,7 +9,6 @@ import * as web3 from "@solana/web3.js";
 import { createNft, mplTokenMetadata } from '@metaplex-foundation/mpl-token-metadata';
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { createGenericFile, createSignerFromKeypair, generateSigner, keypairIdentity, percentAmount, sol } from '@metaplex-foundation/umi';
-import { irysUploader } from '@metaplex-foundation/umi-uploader-irys';
 import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
 
 export default function Page() {
