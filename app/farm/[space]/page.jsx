@@ -16,6 +16,7 @@ export default function Page() {
   const space = params.space || 'Loading...';
   const [data, setData] = useState('');
   const [loading, setLoading] = useState(true);
+  const [pending, setPending] = useState(false);
   const { publicKey, sendTransaction } = useWallet();
   const wallet = useWallet();
   const [selectedCrop, setSelectedCrop] = useState('');
@@ -44,12 +45,15 @@ export default function Page() {
   }, []);
 
   const handlePurchase = async () => {
+    setPending(true);
     if (!publicKey) {
       console.error("Wallet not connected or sendTransaction not available");
+      setPending(false);
       return;
     }
     if (!selectedCrop) {
       alert("Please select a crop to plant");
+      setPending(false);
       return;
     }
 
@@ -59,8 +63,10 @@ export default function Page() {
         "confirmed"
       );
       await sendSol(publicKey, sendTransaction, connection);
+      setPending(false);
     } catch (error) {
       console.error('Error purchasing NFT:', error);
+      setPending(false);
     }
   };
 
@@ -79,7 +85,7 @@ export default function Page() {
         console.log(sig);
       });
 
-      mint();
+      await mint();
     } catch (error) {
       alert(error);
       return;
@@ -91,7 +97,7 @@ export default function Page() {
     const response = await axios.post('/api/farm/nft/mint', { publicKey, metadata: crops[selectedCrop] });
     if (response.status === 200) {
       const { metaDataUri } = response.data;
-      mintNft(metaDataUri, publicKey);
+      await mintNft(metaDataUri, publicKey);
     } else {
       alert("Error minting NFT");
       console.error('Error minting NFT:', response.data);
@@ -115,11 +121,25 @@ export default function Page() {
       }).sendAndConfirm(umi);
       alert("NFT minted successfully");
       console.log(`Created NFT: ${mint.publicKey.toString()}`);
+      await purchased(mint.publicKey.toString());
     } catch (e) {
       console.error('Error minting NFT:', e);
       throw e;
     }
   }
+
+  const purchased = async (nftURI) => {
+    const response = await axios.post('/api/farm/purchased', {
+      id: data._id, metadata: crops[selectedCrop], nftURI, publicKey: publicKey.toString()
+    });
+    
+      
+    if (response.status === 200) {
+      alert("Space purchased successfully!");
+    } else {
+      alert("Error purchasing space");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-green-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -144,6 +164,7 @@ export default function Page() {
                     Select a Crop
                   </label>
                   <select
+                    disabled={pending}
                     id="crop"
                     className="mt-1 block w-full py-3 px-4 border border-gray-300 bg-white rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm transition duration-300"
                     value={selectedCrop}
@@ -178,6 +199,7 @@ export default function Page() {
                 <p className="text-lg font-semibold text-gray-900">Price: 0.2 SOL</p>
                 <button
                   onClick={handlePurchase}
+                  disabled={pending}
                   className="w-full bg-green-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-300 transform hover:scale-105"
                 >
                   Claim Space
